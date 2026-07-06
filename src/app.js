@@ -47,6 +47,7 @@ const configuredCorsOrigins = env.CORS_ORIGIN === '*'
     .map(normalizeOrigin);
 
 const defaultAllowedOrigins = [
+  'https://sima-frontend-orpin.vercel.app',
   'https://sima-theta.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173',

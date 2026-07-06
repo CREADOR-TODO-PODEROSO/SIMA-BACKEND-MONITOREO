@@ -125,7 +125,9 @@ module.exports = {
   ),
   UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
   JWT_SECRET: jwtSecret,
-  CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
+  CORS_ORIGIN:
+    process.env.CORS_ORIGIN ||
+    (isProduction ? 'https://sima-frontend-orpin.vercel.app' : '*'),
   SIMA_QR_TTL_SECONDS: Number(process.env.SIMA_QR_TTL_SECONDS || 120),
   SIMA_GEO_LATITUD_CENTRO_CTPI: Number(process.env.SIMA_GEO_LATITUD_CENTRO_CTPI || 2.4832482),
   SIMA_GEO_LONGITUD_CENTRO_CTPI: Number(process.env.SIMA_GEO_LONGITUD_CENTRO_CTPI || -76.56177339999999),
