@@ -27,15 +27,42 @@ const AlertService = require('./AlertService');
 const NotificationService = require('./NotificationService');
 
 const SESSION_STATES = ['PROGRAMADA', 'ABIERTA', 'CERRADA', 'CANCELADA'];
+const APP_TIME_ZONE = 'America/Bogota';
 
 class EducationalSessionService {
   static _toDateOnly(value) {
     if (!value) return null;
-    return new Date(value).toISOString().slice(0, 10);
+    const stringValue = String(value);
+    const dateOnly = stringValue.match(/^\d{4}-\d{2}-\d{2}/);
+    if (dateOnly) return dateOnly[0];
+    return this._dateTimePartsInAppZone(new Date(value)).date;
+  }
+
+  static _dateTimePartsInAppZone(value = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: APP_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      hourCycle: 'h23',
+    }).formatToParts(value).reduce((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+    return {
+      date: `${parts.year}-${parts.month}-${parts.day}`,
+      time: `${parts.hour}:${parts.minute}:${parts.second}`,
+      seconds: Number(parts.hour) * 3600 + Number(parts.minute) * 60 + Number(parts.second),
+    };
   }
 
   static _todayDateOnly() {
-    return this._toDateOnly(new Date());
+    return this._dateTimePartsInAppZone().date;
   }
 
   static _dateToScheduleDay(dateValue) {
@@ -108,8 +135,7 @@ class EducationalSessionService {
       throw { status: 409, message: 'La sesion solo puede abrirse en la fecha programada' };
     }
 
-    const now = new Date();
-    const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const nowSeconds = this._dateTimePartsInAppZone().seconds;
     const startSeconds = this._timeToSeconds(session.hora_inicio_programada);
     const endSeconds = this._timeToSeconds(session.hora_fin_programada);
     const tolerance = Number(session.horario?.tolerancia_minutos || 0) * 60;
@@ -538,9 +564,8 @@ class EducationalSessionService {
 
   static async autoOpenSessions() {
     const today = this._todayDateOnly();
-    const now = new Date();
-    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
-    const tenMinutesAgoTime = tenMinutesAgo.toTimeString().slice(0, 8);
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const tenMinutesAgoTime = this._dateTimePartsInAppZone(tenMinutesAgo).time;
 
     const sessions = await EducationalSession.findAll({
       where: {
@@ -563,8 +588,7 @@ class EducationalSessionService {
 
   static async autoCloseSessions() {
     const today = this._todayDateOnly();
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 8);
+    const currentTime = this._dateTimePartsInAppZone().time;
 
     const sessions = await EducationalSession.findAll({
       where: {
