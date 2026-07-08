@@ -124,6 +124,10 @@ module.exports = {
     true
   ),
   UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || null,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || null,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || null,
+  CLOUDINARY_PROFILE_FOLDER: process.env.CLOUDINARY_PROFILE_FOLDER || 'sima/profile-photos',
   JWT_SECRET: jwtSecret,
   CORS_ORIGIN:
     process.env.CORS_ORIGIN ||

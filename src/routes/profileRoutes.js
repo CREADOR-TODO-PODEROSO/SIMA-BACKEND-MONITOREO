@@ -4,7 +4,11 @@ const { body } = require('express-validator');
 
 const authMiddleware = require('../middlewares/authmiddleware');
 const { validateRequest } = require('../middlewares/validatemiddleware');
-const { getProfile, updateProfile } = require('../controller/profileController');
+const { getProfile, updateProfile, updateProfilePhoto } = require('../controller/profileController');
+const {
+  uploadProfilePhoto,
+  profilePhotoUploadErrorHandler,
+} = require('../middlewares/profilePhotoUpload');
 
 router.get(
   '/overview',
@@ -40,6 +44,14 @@ router.put(
   ],
   validateRequest,
   updateProfile
+);
+
+router.patch(
+  '/photo',
+  authMiddleware,
+  uploadProfilePhoto.single('foto'),
+  profilePhotoUploadErrorHandler,
+  updateProfilePhoto
 );
 
 module.exports = router;

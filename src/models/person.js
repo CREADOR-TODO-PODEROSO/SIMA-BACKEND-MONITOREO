@@ -35,6 +35,14 @@ const Person = sequelize.define(
       type: DataTypes.STRING(20),
       allowNull: true,
     },
+    foto_perfil_url: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    foto_perfil_public_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
   },
   {
     tableName: 'personas',

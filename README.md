@@ -118,6 +118,30 @@ Variables opcionales:
 - `DB_SSL_REJECT_UNAUTHORIZED=false` solo si el proveedor usa un certificado no verificable.
 - `UPLOAD_DIR=/app/uploads` o la ruta montada de un volumen persistente.
 
+## Imagen de perfil con Cloudinary
+
+La foto de perfil se actualiza en:
+
+- `PATCH /api/profile/photo`
+
+El endpoint es autenticado, recibe `multipart/form-data` con el campo `foto`,
+acepta `JPG`, `PNG` y `WEBP`, y limita el archivo a `2 MB`.
+
+Variables necesarias para habilitar la subida:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `CLOUDINARY_PROFILE_FOLDER=sima/profile-photos` opcional
+
+Para bases de datos existentes, aplicar manualmente:
+
+```sql
+ALTER TABLE personas
+  ADD COLUMN foto_perfil_url VARCHAR(500) DEFAULT NULL,
+  ADD COLUMN foto_perfil_public_id VARCHAR(255) DEFAULT NULL;
+```
+
 Railway proporciona `PORT` automaticamente. No se debe copiar el archivo `.env`
 al servicio ni almacenar secretos en el repositorio.
 

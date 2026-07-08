@@ -50,6 +50,8 @@ CREATE TABLE `personas` (
   `nombres` VARCHAR(100) NOT NULL,
   `apellidos` VARCHAR(100) NOT NULL,
   `telefono` VARCHAR(20) DEFAULT NULL,
+  `foto_perfil_url` VARCHAR(500) DEFAULT NULL,
+  `foto_perfil_public_id` VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`id_persona`),
   UNIQUE KEY `uk_personas_usuario` (`id_usuario`),
   UNIQUE KEY `uk_personas_documento` (`numero_documento`),

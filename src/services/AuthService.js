@@ -15,7 +15,7 @@ class AuthService {
     const user = await User.findOne({
       include: [
         { model: Role, as: 'rol', attributes: ['id_rol', 'nombre', 'descripcion'] },
-        { model: Person, as: 'persona', where: { numero_documento: documentValue }, required: true, attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'] },
+        { model: Person, as: 'persona', where: { numero_documento: documentValue }, required: true, attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'] },
         { model: Instructor, as: 'instructor', required: false, attributes: ['id_instructor', 'estado'] },
         { model: Apprentice, as: 'aprendiz', required: false, attributes: ['id_aprendiz', 'estado'] },
       ],
@@ -82,7 +82,7 @@ class AuthService {
     const user = await User.findByPk(id_usuario, {
       include: [
         { model: Role, as: 'rol', attributes: ['id_rol', 'nombre', 'descripcion'] },
-        { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'] },
+        { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'] },
         { model: Instructor, as: 'instructor', required: false, attributes: ['id_instructor', 'estado'] },
         { model: Apprentice, as: 'aprendiz', required: false, attributes: ['id_aprendiz', 'estado'] },
       ],
