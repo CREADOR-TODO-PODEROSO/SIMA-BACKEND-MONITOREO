@@ -13,6 +13,7 @@ const {
   sequelize,
 } = require('../models');
 const bcrypt = require('bcrypt');
+const CloudinaryService = require('./CloudinaryService');
 
 class ProfileService {
   static async getOverview(userContext) {
@@ -30,7 +31,7 @@ class ProfileService {
         {
           model: Person,
           as: 'persona',
-          attributes: ['tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'],
+          attributes: ['tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'],
         },
       ],
     });
@@ -158,6 +159,36 @@ class ProfileService {
       await transaction.rollback();
       throw error;
     }
+  }
+
+  static async updateProfilePhoto(id_usuario, file) {
+    const user = await User.findByPk(id_usuario, {
+      include: [{ model: Person, as: 'persona' }],
+    });
+
+    if (!user) throw { status: 404, message: 'Usuario no encontrado' };
+    if (!user.persona) throw { status: 404, message: 'Persona asociada al usuario no encontrada' };
+
+    const previousPublicId = user.persona.foto_perfil_public_id;
+    const uploaded = await CloudinaryService.uploadProfilePhoto(file, id_usuario);
+
+    try {
+      await user.persona.update({
+        foto_perfil_url: uploaded.url,
+        foto_perfil_public_id: uploaded.public_id,
+      });
+    } catch (error) {
+      await CloudinaryService.deleteImage(uploaded.public_id);
+      throw error;
+    }
+
+    if (previousPublicId && previousPublicId !== uploaded.public_id) {
+      await CloudinaryService.deleteImage(previousPublicId);
+    }
+
+    return {
+      foto_perfil_url: uploaded.url,
+    };
   }
 }
 

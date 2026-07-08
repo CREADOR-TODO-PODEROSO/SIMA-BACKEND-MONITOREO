@@ -27,7 +27,21 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const updateProfilePhoto = async (req, res) => {
+  try {
+    const result = await ProfileService.updateProfilePhoto(req.user.id_usuario, req.file);
+    return successResponse(res, 'Foto de perfil actualizada correctamente', result);
+  } catch (error) {
+    return errorResponse(
+      res,
+      error.message || 'Error al actualizar la foto de perfil',
+      error.status || 500
+    );
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
+  updateProfilePhoto,
 };

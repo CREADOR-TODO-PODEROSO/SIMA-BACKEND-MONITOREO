@@ -92,7 +92,7 @@ class UserService {
         {
           model: Person,
           as: 'persona',
-          attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'],
+          attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'],
           ...(Object.keys(wherePerson).length ? { where: wherePerson, required: true } : {}),
         },
         { model: Instructor, as: 'instructor', required: false, attributes: ['id_instructor', 'estado'] },
@@ -116,7 +116,7 @@ class UserService {
       attributes: ['id_usuario', 'email', 'estado', 'debe_cambiar_password', 'created_at'],
       include: [
         { model: Role, as: 'rol', attributes: ['id_rol', 'nombre'] },
-        { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'] },
+        { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'] },
         { model: Instructor, as: 'instructor', required: false, attributes: ['id_instructor', 'estado'] },
         { model: Apprentice, as: 'aprendiz', required: false, attributes: ['id_aprendiz', 'estado', 'estado_formativo'] },
       ],
@@ -335,7 +335,7 @@ class UserService {
         attributes: ['id_usuario', 'email', 'estado', 'debe_cambiar_password', 'created_at'],
         include: [
           { model: Role, as: 'rol', attributes: ['id_rol', 'nombre'] },
-          { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'] },
+          { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'] },
           { model: Instructor, as: 'instructor', required: false, attributes: ['id_instructor', 'codigo_instructor', 'especialidad', 'estado'] },
           { model: Apprentice, as: 'aprendiz', required: false, attributes: ['id_aprendiz', 'estado_formativo', 'estado'] },
         ],
@@ -485,7 +485,7 @@ class UserService {
         attributes: ['id_usuario', 'email', 'estado', 'debe_cambiar_password', 'created_at'],
         include: [
           { model: Role, as: 'rol', attributes: ['id_rol', 'nombre'] },
-          { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono'] },
+          { model: Person, as: 'persona', attributes: ['id_persona', 'tipo_documento', 'numero_documento', 'nombres', 'apellidos', 'telefono', 'foto_perfil_url'] },
         ],
       });
     } catch (error) {
