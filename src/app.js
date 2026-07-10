@@ -35,6 +35,9 @@ const formativeProgramsRoutes = require('./routes/formativeProgramsRoutes');
 const alertsRoutes = require('./routes/alertsroutes');
 const notificationsRoutes = require('./routes/notificationsroutes');
 
+// analitica predictiva (Epica 8)
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
 const errorMiddleware = require('./middlewares/errormiddleware');
 
 app.use(helmet());
@@ -138,6 +141,9 @@ app.use('/api/formative-programs', formativeProgramsRoutes);
 // Rutas para alertas
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+
+// Rutas analitica
+app.use('/api/analytics', analyticsRoutes);
 
 app.use(errorMiddleware);
 

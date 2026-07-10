@@ -18,6 +18,13 @@ const startServer = async () => {
     console.log('Conexion a la base de datos establecida correctamente');
 
     const EducationalSessionService = require('./services/EducationalSessionService');
+    const { initScorecardJob } = require('./jobs/scorecardJob');
+    const { initAnalyticsWorker } = require('./workers/analyticsWorker');
+    
+    // Inicializar job de analítica predictiva (Épica 8)
+    initScorecardJob();
+    initAnalyticsWorker();
+
     scheduler = setInterval(async () => {
       try {
         await EducationalSessionService.autoOpenSessions();
