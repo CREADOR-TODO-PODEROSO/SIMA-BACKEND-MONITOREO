@@ -604,6 +604,92 @@ CREATE TABLE `huellas_biometricas` (
     )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `consentimientos_biometricos` (
+  `id_consentimiento` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_usuario` BIGINT UNSIGNED NOT NULL,
+  `tipo_biometria` ENUM('FACIAL') NOT NULL,
+  `version_politica` VARCHAR(40) NOT NULL,
+  `aceptado` BOOLEAN NOT NULL DEFAULT TRUE,
+  `fecha_aceptacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_revocacion` DATETIME DEFAULT NULL,
+  `ip_origen` VARCHAR(45) DEFAULT NULL,
+  `user_agent` VARCHAR(255) DEFAULT NULL,
+  `creado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_consentimiento`),
+  KEY `idx_consentimiento_usuario_tipo` (`id_usuario`, `tipo_biometria`, `aceptado`),
+  CONSTRAINT `fk_consentimiento_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `usuarios` (`id_usuario`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `chk_consentimiento_revocacion`
+    CHECK ((`aceptado` = TRUE AND `fecha_revocacion` IS NULL) OR (`aceptado` = FALSE AND `fecha_revocacion` IS NOT NULL))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `enrolamientos_faciales` (
+  `id_enrolamiento_facial` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_usuario` BIGINT UNSIGNED NOT NULL,
+  `id_aprendiz` BIGINT UNSIGNED NOT NULL,
+  `id_consentimiento` BIGINT UNSIGNED NOT NULL,
+  `estado` ENUM('ACTIVO', 'REVOCADO', 'PENDIENTE_VERIFICACION', 'RECHAZADO') NOT NULL DEFAULT 'ACTIVO',
+  `embedding_cifrado` LONGBLOB NOT NULL,
+  `embedding_hash` CHAR(64) NOT NULL,
+  `modelo_version` VARCHAR(80) NOT NULL,
+  `proveedor` VARCHAR(80) NOT NULL DEFAULT 'SIMA_LOCAL_CONTRACT',
+  `calidad_captura` TINYINT UNSIGNED DEFAULT NULL,
+  `liveness_score` DECIMAL(5,4) DEFAULT NULL,
+  `enrolado_por` BIGINT UNSIGNED NOT NULL,
+  `fecha_enrolamiento` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `revocado_por` BIGINT UNSIGNED DEFAULT NULL,
+  `fecha_revocacion` DATETIME DEFAULT NULL,
+  `motivo_revocacion` VARCHAR(255) DEFAULT NULL,
+  `creado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `aprendiz_activo_key` BIGINT UNSIGNED GENERATED ALWAYS AS (CASE WHEN `estado` = 'ACTIVO' THEN `id_aprendiz` ELSE NULL END) VIRTUAL,
+  PRIMARY KEY (`id_enrolamiento_facial`),
+  UNIQUE KEY `uk_enrolamiento_facial_activo_aprendiz` (`aprendiz_activo_key`),
+  KEY `idx_enrolamiento_facial_usuario_estado` (`id_usuario`, `estado`),
+  KEY `idx_enrolamiento_facial_aprendiz_estado` (`id_aprendiz`, `estado`),
+  KEY `idx_enrolamiento_facial_hash` (`embedding_hash`),
+  KEY `fk_ef_consentimiento` (`id_consentimiento`),
+  KEY `fk_ef_enrolado_por` (`enrolado_por`),
+  KEY `fk_ef_revocado_por` (`revocado_por`),
+  CONSTRAINT `fk_ef_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `usuarios` (`id_usuario`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `fk_ef_aprendiz`
+    FOREIGN KEY (`id_aprendiz`)
+    REFERENCES `aprendices` (`id_aprendiz`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `fk_ef_consentimiento`
+    FOREIGN KEY (`id_consentimiento`)
+    REFERENCES `consentimientos_biometricos` (`id_consentimiento`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `fk_ef_enrolado_por`
+    FOREIGN KEY (`enrolado_por`)
+    REFERENCES `usuarios` (`id_usuario`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `fk_ef_revocado_por`
+    FOREIGN KEY (`revocado_por`)
+    REFERENCES `usuarios` (`id_usuario`),
+  CONSTRAINT `chk_enrolamiento_facial_calidad`
+    CHECK (`calidad_captura` IS NULL OR `calidad_captura` BETWEEN 0 AND 100),
+  CONSTRAINT `chk_enrolamiento_facial_liveness`
+    CHECK (`liveness_score` IS NULL OR (`liveness_score` >= 0 AND `liveness_score` <= 1)),
+  CONSTRAINT `chk_enrolamiento_facial_revocacion`
+    CHECK (
+      (`estado` = 'ACTIVO' AND `fecha_revocacion` IS NULL AND `revocado_por` IS NULL AND `motivo_revocacion` IS NULL)
+      OR
+      (`estado` <> 'ACTIVO')
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =====================================================
 -- Sesiones, asistencia y seguimiento
 -- =====================================================
@@ -870,6 +956,59 @@ CREATE TABLE `evidencias_asistencia` (
     CHECK (`precision_metros` IS NULL OR `precision_metros` >= 0),
   CONSTRAINT `chk_evidencia_distancia`
     CHECK (`distancia_metros` IS NULL OR `distancia_metros` >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `intentos_validacion_facial` (
+  `id_intento_facial` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id_usuario` BIGINT UNSIGNED NOT NULL,
+  `id_aprendiz` BIGINT UNSIGNED NOT NULL,
+  `id_sesion_formacion` BIGINT UNSIGNED DEFAULT NULL,
+  `id_asistencia` BIGINT UNSIGNED DEFAULT NULL,
+  `id_enrolamiento_facial` BIGINT UNSIGNED DEFAULT NULL,
+  `resultado` ENUM('APROBADO', 'RECHAZADO', 'NO_DISPONIBLE', 'LIVENESS_FALLIDO', 'ERROR') NOT NULL,
+  `motivo` VARCHAR(120) DEFAULT NULL,
+  `proveedor` VARCHAR(80) DEFAULT NULL,
+  `modelo_version` VARCHAR(80) DEFAULT NULL,
+  `score_match` DECIMAL(6,5) DEFAULT NULL,
+  `liveness_result` ENUM('PASSED', 'BASIC_PASSED', 'FAILED', 'NOT_AVAILABLE') NOT NULL DEFAULT 'NOT_AVAILABLE',
+  `device_uuid` VARCHAR(120) NOT NULL,
+  `challenge_nonce` VARCHAR(120) NOT NULL,
+  `fecha_intento` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `detalle` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id_intento_facial`),
+  UNIQUE KEY `uk_intento_facial_nonce` (`challenge_nonce`),
+  KEY `idx_intento_facial_usuario_sesion` (`id_usuario`, `id_sesion_formacion`, `fecha_intento`),
+  KEY `idx_intento_facial_aprendiz_resultado` (`id_aprendiz`, `resultado`, `fecha_intento`),
+  KEY `fk_if_sesion` (`id_sesion_formacion`),
+  KEY `fk_if_asistencia` (`id_asistencia`),
+  KEY `fk_if_enrolamiento` (`id_enrolamiento_facial`),
+  CONSTRAINT `fk_if_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `usuarios` (`id_usuario`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `fk_if_aprendiz`
+    FOREIGN KEY (`id_aprendiz`)
+    REFERENCES `aprendices` (`id_aprendiz`)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+  CONSTRAINT `fk_if_sesion`
+    FOREIGN KEY (`id_sesion_formacion`)
+    REFERENCES `sesiones_formacion` (`id_sesion_formacion`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  CONSTRAINT `fk_if_asistencia`
+    FOREIGN KEY (`id_asistencia`)
+    REFERENCES `asistencias` (`id_asistencia`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  CONSTRAINT `fk_if_enrolamiento`
+    FOREIGN KEY (`id_enrolamiento_facial`)
+    REFERENCES `enrolamientos_faciales` (`id_enrolamiento_facial`)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+  CONSTRAINT `chk_intento_facial_score`
+    CHECK (`score_match` IS NULL OR (`score_match` >= 0 AND `score_match` <= 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `justificaciones_asistencia` (
@@ -1534,17 +1673,16 @@ INSERT INTO `personas` (`id_usuario`, `tipo_documento`, `numero_documento`, `nom
 (4, 'CC', '1000000003', 'Jorge', 'Crucerira', '3227778899');
 
 INSERT INTO `areas_formacion` (`nombre_area`) VALUES
-('Analisis y Desarrollo de Software'),
-('Internet de las Cosas'),
-('Redes y Telecomunicaciones');
+('CTPI'),
+('AGRO'),
+('TELECO');
 
-INSERT INTO `coordinador_area` (`id_usuario`, `id_area`, `estado`, `asignado_por`) VALUES
-(2, 1, 'ACTIVO', 1);
+
 
 INSERT INTO `ambientes` (`nombre_ambiente`, `ubicacion`, `capacidad`, `estado`) VALUES
-('Laboratorio de Software 1', 'Piso 2, Ala Sur', 30, 'ACTIVO'),
-('Taller de Electronica', 'Piso 1, Ala Norte', 20, 'ACTIVO'),
-('Ambiente de Conectividad', 'Piso 2, Edificio B', 25, 'MANTENIMIENTO');
+('ADSO#3', 'Piso 2, Ala Sur', 30, 'ACTIVO'),
+('AGRO#9', 'Piso 1, Ala Norte', 20, 'ACTIVO'),
+('TELECO#1', 'Piso 2, Edificio B', 25, 'MANTENIMIENTO');
 
 INSERT INTO `programas_formacion` (`id_area`, `nombre_programa`) VALUES
 (1, 'ADSO');
@@ -1552,7 +1690,7 @@ INSERT INTO `programas_formacion` (`id_area`, `nombre_programa`) VALUES
 INSERT INTO `clases_competencias` (`nombre_competencia`, `tipo_competencia`, `estado`) VALUES
 ('BACKEND', 'FORMATIVA', 'ACTIVA'),
 ('BASES DE DATOS', 'FORMATIVA', 'ACTIVA'),
-('ETICA', 'TRANSVERSAL', 'ACTIVA');
+('INGLES', 'TRANSVERSAL', 'ACTIVA');
 
 INSERT INTO `programa_clase_competencia` (`id_programa`, `id_clase_competencia`, `estado`) VALUES
 (1, 1, 'ACTIVO'),
@@ -1566,7 +1704,7 @@ INSERT INTO `aprendices` (`id_usuario`, `estado_formativo`, `estado`) VALUES
 (4, 'EN_FORMACION', 'ACTIVO');
 
 INSERT INTO `grupos_formativos` (`numero_ficha`, `id_programa`, `jornada`, `fecha_inicio`, `fecha_fin`, `id_ambiente`, `id_instructor_lider`, `trimestres`) VALUES
-('3064975', 1, 'MANANA', '2025-01-20', '2026-07-20', 1, 1, 6);
+('3064975', 1, 'MAÑANA', '2025-01-20', '2026-07-20', 1, 1, 6);
 
 INSERT INTO `grupo_trimestre` (`id_grupo`, `numero_trimestre`, `fecha_inicio`, `fecha_fin`, `estado`) VALUES
 (1, 1, '2025-01-20', '2025-04-20', 'COMPLETADO'),
@@ -1586,10 +1724,12 @@ INSERT INTO `aprendiz_grupo` (`id_aprendiz`, `id_grupo`, `estado`, `fecha_inicio
 (1, 1, 'ACTIVO', '2025-01-20 00:00:00', 2);
 
 INSERT INTO `bloques_jornada` (`jornada`, `nombre_bloque`, `orden`, `hora_inicio`, `hora_fin`, `estado`) VALUES
-('MANANA', 'Bloque manana 1', 1, '07:00:00', '09:30:00', 'ACTIVO'),
-('MANANA', 'Bloque manana 2', 2, '10:00:00', '12:30:00', 'ACTIVO'),
+('MANAÑA', 'Bloque manaña 1', 1, '07:00:00', '09:30:00', 'ACTIVO'),
+('MANAÑA', 'Bloque manaña 2', 2, '10:00:00', '12:30:00', 'ACTIVO'),
+('MANAÑA', 'Bloque manaña 3', 3, '07:00:00', '12:30:00', 'ACTIVO'),
 ('TARDE', 'Bloque tarde 1', 1, '14:00:00', '16:30:00', 'ACTIVO'),
 ('TARDE', 'Bloque tarde 2', 2, '17:00:00', '19:00:00', 'ACTIVO'),
+('TARDE', 'Bloque tarde 3', 3, '14:00:00', '19:00:00', 'ACTIVO'),
 ('NOCHE', 'Bloque noche 1', 1, '20:00:00', '22:00:00', 'ACTIVO');
 
 INSERT INTO `horarios_formacion` (`id_grupo_trimestre`, `id_clase_competencia`, `id_instructor_grupo`, `id_bloque_jornada`, `id_ambiente`, `dia_semana`, `hora_inicio`, `hora_fin`) VALUES
@@ -1600,19 +1740,7 @@ INSERT INTO `dispositivos_iot` (`codigo_dispositivo`, `id_ambiente`, `tipo_dispo
 ('ESP32-LAB-001', 1, 'ESP32_HUELLA', 'ACTIVO', '2026-06-17 06:50:00', '2026-06-17 06:51:00', 1),
 ('ESP32-TALLER-002', 2, 'ESP32_HUELLA', 'ACTIVO', NULL, NULL, 1);
 
-INSERT INTO `huellas_biometricas` (`id_usuario`, `id_dispositivo_enrolamiento`, `plantilla_biometrica_cifrada`, `plantilla_hash`, `calidad_captura`, `dedo`, `enrolado_por`, `estado`) VALUES
-(4, 1, UNHEX(SHA2('plantilla-cifrada-demo-jorge-1', 512)), SHA2('plantilla-demo-jorge-1', 256), 86, 'INDICE_DERECHO', 1, 'ACTIVA'),
-(4, 1, UNHEX(SHA2('plantilla-cifrada-demo-jorge-2', 512)), SHA2('plantilla-demo-jorge-2', 256), 84, 'INDICE_IZQUIERDO', 1, 'ACTIVA');
 
-INSERT INTO `accesos_ambiente` (`id_usuario`, `id_dispositivo`, `tipo_evento`, `resultado`, `observacion`) VALUES
-(4, 1, 'ENTRADA', 'PERMITIDO', 'Ingreso validado por huella'),
-(NULL, 1, 'INTENTO_FALLIDO', 'DENEGADO', 'Huella no identificada');
-
-INSERT INTO `sesiones_formacion` (`id_horario`, `id_grupo_trimestre`, `id_clase_competencia`, `id_bloque_jornada`, `id_grupo`, `id_instructor`, `id_ambiente`, `fecha_clase`, `hora_inicio_programada`, `hora_fin_programada`, `estado`, `origen_apertura`, `fecha_apertura`, `qr_token_hash`, `abierta_por`) VALUES
-(1, 6, 1, 1, 1, 1, 1, '2026-06-17', '07:00:00', '09:30:00', 'ABIERTA', 'MANUAL_RESPALDO', '2026-06-17 07:00:00', SHA2('qr-demo-sesion-1', 256), 3);
-
-INSERT INTO `asistencias` (`id_sesion_formacion`, `id_aprendiz`, `estado_asistencia`, `origen`) VALUES
-(1, 1, 'PENDIENTE', NULL);
 
 INSERT INTO `intentos_asistencia_iot` (`id_dispositivo`, `id_sesion_formacion`, `id_usuario`, `tipo_intento`, `resultado`, `calidad_captura`, `evento_uuid`, `nonce`, `firma_evento`, `fecha_origen`, `expira_en`, `motivo`, `detalle`) VALUES
 (1, 1, 4, 'ASISTENCIA', 'EXITOSO', 88, '00000000-0000-4000-8000-000000000001', 'seed-nonce-iot-0001', 'seed-firma-iot-demo-0001', '2026-06-17 07:05:00', '2026-06-17 07:10:00', 'HUELLA_VALIDADA', 'Intento IoT exitoso de ejemplo'),

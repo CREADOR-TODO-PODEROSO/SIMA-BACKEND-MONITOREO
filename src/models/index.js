@@ -33,6 +33,9 @@ const AlertObservation = require('./alertObservation');
 const AttendanceJustification = require('./attendanceJustifications');
 const Notification = require('./notifications');
 const BiometricFingerprint = require('./biometricFingerprints');
+const BiometricConsent = require('./biometricConsents');
+const FacialEnrollment = require('./facialEnrollments');
+const FacialValidationAttempt = require('./facialValidationAttempts');
 const ValidAbsencesView = require('./validAbsencesView');
 const PrivilegedAudit = require('./privilegedAudits');
 
@@ -832,6 +835,109 @@ User.hasMany(BiometricFingerprint, {
   as: 'huellas_enroladas',
 });
 
+// =========================
+// Biometria facial de aprendices
+// =========================
+BiometricConsent.belongsTo(User, {
+  foreignKey: 'id_usuario',
+  as: 'usuario',
+});
+
+User.hasMany(BiometricConsent, {
+  foreignKey: 'id_usuario',
+  as: 'consentimientos_biometricos',
+});
+
+FacialEnrollment.belongsTo(User, {
+  foreignKey: 'id_usuario',
+  as: 'usuario',
+});
+
+User.hasMany(FacialEnrollment, {
+  foreignKey: 'id_usuario',
+  as: 'enrolamientos_faciales',
+});
+
+FacialEnrollment.belongsTo(Apprentice, {
+  foreignKey: 'id_aprendiz',
+  as: 'aprendiz',
+});
+
+Apprentice.hasMany(FacialEnrollment, {
+  foreignKey: 'id_aprendiz',
+  as: 'enrolamientos_faciales',
+});
+
+FacialEnrollment.belongsTo(BiometricConsent, {
+  foreignKey: 'id_consentimiento',
+  as: 'consentimiento',
+});
+
+BiometricConsent.hasMany(FacialEnrollment, {
+  foreignKey: 'id_consentimiento',
+  as: 'enrolamientos_faciales',
+});
+
+FacialEnrollment.belongsTo(User, {
+  foreignKey: 'enrolado_por',
+  as: 'usuario_enrolador',
+});
+
+FacialEnrollment.belongsTo(User, {
+  foreignKey: 'revocado_por',
+  as: 'usuario_revocador',
+});
+
+FacialValidationAttempt.belongsTo(User, {
+  foreignKey: 'id_usuario',
+  as: 'usuario',
+});
+
+User.hasMany(FacialValidationAttempt, {
+  foreignKey: 'id_usuario',
+  as: 'intentos_validacion_facial',
+});
+
+FacialValidationAttempt.belongsTo(Apprentice, {
+  foreignKey: 'id_aprendiz',
+  as: 'aprendiz',
+});
+
+Apprentice.hasMany(FacialValidationAttempt, {
+  foreignKey: 'id_aprendiz',
+  as: 'intentos_validacion_facial',
+});
+
+FacialValidationAttempt.belongsTo(EducationalSession, {
+  foreignKey: 'id_sesion_formacion',
+  as: 'sesion',
+});
+
+EducationalSession.hasMany(FacialValidationAttempt, {
+  foreignKey: 'id_sesion_formacion',
+  as: 'intentos_validacion_facial',
+});
+
+FacialValidationAttempt.belongsTo(Attendance, {
+  foreignKey: 'id_asistencia',
+  as: 'asistencia',
+});
+
+Attendance.hasMany(FacialValidationAttempt, {
+  foreignKey: 'id_asistencia',
+  as: 'intentos_validacion_facial',
+});
+
+FacialValidationAttempt.belongsTo(FacialEnrollment, {
+  foreignKey: 'id_enrolamiento_facial',
+  as: 'enrolamiento_facial',
+});
+
+FacialEnrollment.hasMany(FacialValidationAttempt, {
+  foreignKey: 'id_enrolamiento_facial',
+  as: 'intentos_validacion_facial',
+});
+
 PrivilegedAudit.belongsTo(User, {
   foreignKey: 'id_usuario_responsable',
   as: 'responsable',
@@ -876,6 +982,9 @@ module.exports = {
   AttendanceJustification,
   Notification,
   BiometricFingerprint,
+  BiometricConsent,
+  FacialEnrollment,
+  FacialValidationAttempt,
   ValidAbsencesView,
   PrivilegedAudit,
 };

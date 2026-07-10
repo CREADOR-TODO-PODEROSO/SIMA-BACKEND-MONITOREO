@@ -23,6 +23,7 @@ const instructorGroupsRoutes = require('./routes/instructorGroupsRoutes');
 const apprenticePortalRoutes = require('./routes/apprenticePortalRoutes');
 const iotRoutes = require('./routes/iotRoutes');
 const biometricFingerprintsRoutes = require('./routes/biometricFingerprintsRoutes');
+const facialBiometricsRoutes = require('./routes/facialBiometricsRoutes');
 
 // coordinacion
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -126,6 +127,7 @@ app.use('/api/instructor-groups', instructorGroupsRoutes);
 app.use('/api/apprentice-portal', apprenticePortalRoutes);
 app.use('/api/iot', iotRoutes);
 app.use('/api/biometrics/fingerprints', biometricFingerprintsRoutes);
+app.use('/api/biometrics/facial', facialBiometricsRoutes);
 
 // Rutas especificas para coordinadores
 app.use('/api/dashboard', dashboardRoutes);

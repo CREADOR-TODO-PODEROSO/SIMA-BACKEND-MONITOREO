@@ -82,6 +82,15 @@ if (isProduction) {
   if (!process.env.SIMA_MOBILE_BIOMETRIC_CHALLENGE_SECRET) {
     missingVariables.push('SIMA_MOBILE_BIOMETRIC_CHALLENGE_SECRET');
   }
+  if (!process.env.SIMA_FACE_ENCRYPTION_KEY) {
+    missingVariables.push('SIMA_FACE_ENCRYPTION_KEY');
+  }
+  if (!process.env.SIMA_FACE_HASH_PEPPER) {
+    missingVariables.push('SIMA_FACE_HASH_PEPPER');
+  }
+  if (!process.env.SIMA_FACE_CHALLENGE_SECRET) {
+    missingVariables.push('SIMA_FACE_CHALLENGE_SECRET');
+  }
 
   const missingDatabaseVariables = [
     ['DB_HOST', 'MYSQLHOST', databaseVariables.host],
@@ -164,4 +173,25 @@ module.exports = {
     (isProduction ? null : 'dev-only-mobile-biometric-challenge-secret-change-me'),
   SIMA_MOBILE_BIOMETRIC_CHALLENGE_TTL_SECONDS:
     Number(process.env.SIMA_MOBILE_BIOMETRIC_CHALLENGE_TTL_SECONDS || 120),
+  SIMA_FACE_ENCRYPTION_KEY:
+    process.env.SIMA_FACE_ENCRYPTION_KEY ||
+    (isProduction ? null : 'dev-only-face-encryption-key-change-me-32'),
+  SIMA_FACE_ENCRYPTION_KEY_ID:
+    process.env.SIMA_FACE_ENCRYPTION_KEY_ID || 'face-local-dev-v1',
+  SIMA_FACE_HASH_PEPPER:
+    process.env.SIMA_FACE_HASH_PEPPER ||
+    (isProduction ? null : 'dev-only-face-hash-pepper-change-me'),
+  SIMA_FACE_CHALLENGE_SECRET:
+    process.env.SIMA_FACE_CHALLENGE_SECRET ||
+    (isProduction ? null : 'dev-only-face-challenge-secret-change-me'),
+  SIMA_FACE_CHALLENGE_TTL_SECONDS:
+    Number(process.env.SIMA_FACE_CHALLENGE_TTL_SECONDS || 120),
+  SIMA_FACE_RESULT_TTL_SECONDS:
+    Number(process.env.SIMA_FACE_RESULT_TTL_SECONDS || 120),
+  SIMA_FACE_MATCH_THRESHOLD:
+    Number(process.env.SIMA_FACE_MATCH_THRESHOLD || 0.82),
+  SIMA_FACE_MIN_ENROLL_QUALITY:
+    Number(process.env.SIMA_FACE_MIN_ENROLL_QUALITY || 40),
+  SIMA_FACE_CONSENT_POLICY_VERSION:
+    process.env.SIMA_FACE_CONSENT_POLICY_VERSION || 'facial-sima-v1',
 };

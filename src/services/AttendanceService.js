@@ -33,6 +33,7 @@ const {
 } = require('../helpers/mobileBiometricChallenge');
 const { getAccessibleGroupIdsForRequester } = require('../helpers/coordinatorAuth');
 const ApprenticePortalService = require('./ApprenticePortalService');
+const FacialBiometricsService = require('./FacialBiometricsService');
 const NotificationService = require('./NotificationService');
 
 class AttendanceService {
@@ -235,15 +236,17 @@ class AttendanceService {
     return safe;
   }
 
-  static _validateMobileBiometric({
+  static async _validateMobileBiometric({
     biometric_method,
     biometric_result,
     biometric_challenge_token,
+    facial_validation_token,
     biometric_metadata,
     requester,
     session,
     scannedHash,
     device_uuid,
+    transaction = null,
   }) {
     const method = String(biometric_method || '').trim().toUpperCase();
     const result = String(biometric_result || '').trim().toUpperCase();
@@ -277,11 +280,33 @@ class AttendanceService {
       throw { status: 401, message: 'Metodo biometrico no permitido para este reto' };
     }
 
-    return {
+    const evidence = {
       method,
       metadata: this._sanitizeBiometricMetadata(biometric_metadata),
       nonce: challenge.nonce,
     };
+
+    if (method !== 'FACIAL_SIMA') {
+      return evidence;
+    }
+
+    if (!facial_validation_token) {
+      throw { status: 409, message: 'Facial SIMA requiere validacion de identidad facial contra enrolamiento activo' };
+    }
+
+    return FacialBiometricsService.verifyAttendanceFacialResult({
+      token: facial_validation_token,
+      requester,
+      session,
+      device_uuid,
+      transaction,
+    }).then(({ attempt, result }) => ({
+      ...evidence,
+      facial_attempt_id: attempt.id_intento_facial,
+      facial_enrollment_id: result.id_enrolamiento_facial,
+      facial_score_match: result.score_match,
+      facial_liveness_result: result.liveness_result,
+    }));
   }
 
   static _serializeAttendance(attendance) {
@@ -399,6 +424,7 @@ class AttendanceService {
       biometric_method,
       biometric_result,
       biometric_challenge_token,
+      facial_validation_token,
       biometric_metadata,
     } = data;
     const lat = Number(latitud);
@@ -441,15 +467,17 @@ class AttendanceService {
         throw { status: 400, message: `Te encuentras fuera del rango permitido del CTPI (${distance.toFixed(1)}m > ${allowedRadius}m)` };
       }
 
-      const biometricEvidence = this._validateMobileBiometric({
+      const biometricEvidence = await this._validateMobileBiometric({
         biometric_method,
         biometric_result,
         biometric_challenge_token,
+        facial_validation_token,
         biometric_metadata,
         requester,
         session,
         scannedHash,
         device_uuid,
+        transaction,
       });
 
       // 6. Obtener registro de asistencia PENDIENTE
@@ -506,8 +534,16 @@ class AttendanceService {
         metodo: biometricEvidence.method,
         resultado: 'APROBADA',
         id_usuario_registra: requester.id_usuario,
-        detalle: `Proveedor: ${biometricEvidence.metadata.provider}. Intento: ${biometricEvidence.metadata.attempt_number}. Duracion: ${Math.round(biometricEvidence.metadata.duration_ms)}ms. Motivo: ${biometricEvidence.metadata.reason}.`,
+        detalle: `Proveedor: ${biometricEvidence.metadata.provider}. Intento: ${biometricEvidence.metadata.attempt_number}. Duracion: ${Math.round(biometricEvidence.metadata.duration_ms)}ms. Motivo: ${biometricEvidence.metadata.reason}.${biometricEvidence.facial_attempt_id ? ` Intento facial: ${biometricEvidence.facial_attempt_id}. Liveness: ${biometricEvidence.facial_liveness_result}.` : ''}`,
       }, { transaction });
+
+      if (biometricEvidence.facial_attempt_id) {
+        await FacialBiometricsService.attachAttemptToAttendance({
+          id_intento_facial: biometricEvidence.facial_attempt_id,
+          id_asistencia: attendance.id_asistencia,
+          transaction,
+        });
+      }
 
       await transaction.commit();
 
