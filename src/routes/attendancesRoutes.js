@@ -118,6 +118,11 @@ router.post(
     body('biometric_method').isIn(['FACIAL_SIMA', 'BIOMETRIA_MOVIL']).withMessage('biometric_method debe ser FACIAL_SIMA o BIOMETRIA_MOVIL'),
     body('biometric_result').equals('APROBADO').withMessage('biometric_result debe ser APROBADO'),
     body('biometric_challenge_token').notEmpty().withMessage('biometric_challenge_token es obligatorio'),
+    body('facial_validation_token')
+      .optional({ nullable: true, checkFalsy: true })
+      .trim()
+      .isLength({ min: 20 })
+      .withMessage('facial_validation_token invalido'),
     body('biometric_metadata').optional({ nullable: true }).isObject().withMessage('biometric_metadata debe ser un objeto'),
   ],
   validateRequest,
