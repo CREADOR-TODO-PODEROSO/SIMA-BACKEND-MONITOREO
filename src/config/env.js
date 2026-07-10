@@ -148,6 +148,9 @@ module.exports = {
   SIMA_GEO_PRECISION_MAXIMA_METROS: Number(process.env.SIMA_GEO_PRECISION_MAXIMA_METROS || 80),
   SIMA_IOT_MIN_QUALITY: Number(process.env.SIMA_IOT_MIN_QUALITY || 40),
   SIMA_IOT_MAX_FUTURE_SKEW_SECONDS: Number(process.env.SIMA_IOT_MAX_FUTURE_SKEW_SECONDS || 30),
+  // Epica 8 - Analitica Predictiva e IA
+  REDIS_URL: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || (isProduction ? null : 'dev-gemini-key-mock'),
   SIMA_IOT_DEVICE_SECRETS: parseJsonObject(
     process.env.SIMA_IOT_DEVICE_SECRETS,
     isProduction ? {} : {

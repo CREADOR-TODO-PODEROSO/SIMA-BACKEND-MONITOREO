@@ -73,25 +73,27 @@ const Attendance = sequelize.define(
 );
 
 // Hooks para integracion automatica del motor de alertas
-Attendance.addHook('afterCreate', async (attendance, options) => {
+Attendance.addHook('afterCreate', (attendance, options) => {
   if (['INASISTENCIA', 'JUSTIFICADO'].includes(attendance.estado_asistencia)) {
-    try {
+    // Desacoplado (Bloque 2): Se encola en el Event Loop para no bloquear la transacción actual
+    setImmediate(() => {
       const AlertService = require('../services/AlertService');
-      await AlertService.evaluateInattendanceAlert(attendance.id_aprendiz);
-    } catch (err) {
-      console.error('Error al evaluar alerta de inasistencia despues de creacion:', err);
-    }
+      AlertService.evaluateInattendanceAlert(attendance.id_aprendiz).catch(err => {
+        console.error('Error al evaluar alerta de inasistencia despues de creacion (async):', err);
+      });
+    });
   }
 });
 
-Attendance.addHook('afterUpdate', async (attendance, options) => {
+Attendance.addHook('afterUpdate', (attendance, options) => {
   if (attendance.changed('estado_asistencia')) {
-    try {
+    // Desacoplado (Bloque 2): Se encola en el Event Loop para no bloquear la transacción actual
+    setImmediate(() => {
       const AlertService = require('../services/AlertService');
-      await AlertService.evaluateInattendanceAlert(attendance.id_aprendiz);
-    } catch (err) {
-      console.error('Error al evaluar alerta de inasistencia despues de actualizacion:', err);
-    }
+      AlertService.evaluateInattendanceAlert(attendance.id_aprendiz).catch(err => {
+        console.error('Error al evaluar alerta de inasistencia despues de actualizacion (async):', err);
+      });
+    });
   }
 });
 
